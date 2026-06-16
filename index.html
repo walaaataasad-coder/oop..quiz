@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OOP Quiz</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#1a4f8a;--mid:#2c6fad;--light:#dceeff;
+  --green:#14784a;--gbg:#e6f7ef;
+  --red:#b02020;--rbg:#fceaea;
+  --gray:#f4f6f8;--border:#d0d9e4;--text:#1a1a2e;--sub:#556070;
+  --sans:'Segoe UI',system-ui,sans-serif;--mono:'Courier New',monospace;--r:10px;
+}
+body{font-family:var(--sans);background:#eef3f9;color:var(--text);min-height:100vh}
+.page{max-width:820px;margin:0 auto;padding:24px 16px 60px}
+
+#timer-bar{position:sticky;top:0;z-index:100;background:var(--blue);color:#fff;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 20px;border-radius:0 0 var(--r) var(--r);
+  box-shadow:0 2px 12px rgba(0,0,0,.2);margin-bottom:28px}
+#timer-bar .ttl{font-size:15px;font-weight:600}
+#timer-display{font-size:22px;font-weight:700;letter-spacing:.05em}
+#timer-display.warn{color:#ffd166;animation:pulse 1s infinite}
+#timer-display.danger{color:#ff6b6b;animation:pulse .5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+#ans-count{font-size:13px;opacity:.8}
+
+.exam-header{background:var(--blue);color:#fff;border-radius:var(--r);
+  padding:24px 28px;margin-bottom:24px;box-shadow:0 2px 12px rgba(26,79,138,.2)}
+.exam-header h1{font-size:22px;font-weight:700;margin-bottom:6px}
+.exam-header p{font-size:13px;opacity:.75}
+
+.student-info{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin-bottom:28px}
+.info-field{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:10px 14px}
+.info-field label{display:block;font-size:11px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.info-field input{width:100%;border:none;outline:none;font-size:15px;font-family:var(--sans);color:var(--text)}
+
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;
+  background:var(--mid);color:#fff;padding:12px 18px;
+  border-radius:var(--r) var(--r) 0 0;margin-top:32px}
+.sec-hdr h2{font-size:15px;font-weight:600}
+.sec-marks{font-size:12px;opacity:.8;background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px}
+.sec-instr{background:var(--light);border-left:4px solid var(--mid);
+  padding:10px 16px;font-size:13px;color:var(--blue);margin-bottom:16px;border-radius:0 0 6px 6px}
+
+.q-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.q-card.unanswered-highlight{border-color:#e8a000;box-shadow:0 0 0 2px #ffd16644}
+
+.q-row{display:flex;align-items:flex-start;padding:13px 16px}
+.q-num{font-size:12px;font-weight:700;color:var(--mid);min-width:34px;padding-top:2px}
+.q-text{flex:1;font-size:14px;line-height:1.65}
+.q-text code{font-family:var(--mono);font-size:12px;background:#f0f4ff;padding:1px 5px;border-radius:4px;color:#1a3a6b}
+.tf-btns{display:flex;gap:8px;padding:0 16px 13px 50px}
+.tf-btn{padding:6px 18px;border:1.5px solid var(--border);border-radius:6px;
+  background:var(--gray);cursor:pointer;font-size:13px;font-weight:600;
+  font-family:var(--sans);transition:.15s}
+.tf-btn:hover:not(.locked){background:var(--light);border-color:var(--mid)}
+.tf-btn.sel{background:var(--light);border-color:var(--mid);color:var(--blue)}
+.tf-btn.correct{background:var(--gbg);border-color:var(--green);color:var(--green)}
+.tf-btn.wrong{background:var(--rbg);border-color:var(--red);color:var(--red)}
+.tf-btn.reveal{background:var(--gbg);border-color:var(--green);color:var(--green)}
+.tf-btn.locked{cursor:default}
+
+.feedback{font-size:13px;line-height:1.7;display:none;margin:0 16px 13px 50px;
+  padding:10px 12px;border-radius:6px}
+.feedback.show{display:block}
+.feedback.c{background:var(--gbg);border-left:4px solid var(--green);color:#0a4d30}
+.feedback.w{background:var(--rbg);border-left:4px solid var(--red);color:#6b1010}
+.feedback .ar{font-size:13px;margin-top:7px;color:#333;line-height:1.85;
+  direction:rtl;text-align:right;border-top:1px solid #ddd;padding-top:7px;
+  font-family:'Segoe UI',Tahoma,sans-serif}
+.retry-btn{display:inline-block;margin-top:8px;padding:5px 14px;
+  background:var(--mid);color:#fff;border:none;border-radius:6px;
+  cursor:pointer;font-size:12px;font-family:var(--sans);font-weight:600}
+.retry-btn:hover{background:var(--blue)}
+
+#submit-btn{display:block;width:100%;margin-top:32px;padding:14px;
+  background:var(--blue);color:#fff;border:none;border-radius:var(--r);
+  font-size:16px;font-weight:700;cursor:pointer;font-family:var(--sans);
+  box-shadow:0 3px 12px rgba(26,79,138,.3);transition:.2s}
+#submit-btn:hover:not(:disabled){background:#163f72;transform:translateY(-1px)}
+#submit-btn:disabled{opacity:.4;cursor:default;transform:none}
+
+#results{display:none;background:#fff;border:1px solid var(--border);
+  border-radius:var(--r);padding:28px;margin-top:32px}
+#results h2{font-size:20px;margin-bottom:20px;color:var(--blue)}
+.score-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.sc{background:var(--gray);border-radius:8px;padding:14px;text-align:center}
+.sc .val{font-size:26px;font-weight:700}
+.sc .lbl{font-size:11px;color:var(--sub);margin-top:4px;text-transform:uppercase;letter-spacing:.04em}
+.sc.g .val{color:var(--green)}.sc.r .val{color:var(--red)}
+.result-msg{font-size:15px;line-height:1.7;padding:14px 18px;border-radius:8px}
+.result-msg.pass{background:var(--gbg);color:#0a4d30;border-left:4px solid var(--green)}
+.result-msg.fail{background:var(--rbg);color:#6b1010;border-left:4px solid var(--red)}
+
+.topic-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;
+  border-radius:20px;background:#e8f0ff;color:var(--mid);margin-right:6px;vertical-align:middle}
+
+@media(max-width:600px){
+  .student-info{grid-template-columns:1fr}
+  .score-grid{grid-template-columns:repeat(2,1fr)}
+  #timer-bar{border-radius:0}
+}
+</style>
+</head>
+<body>
+
+<div id="timer-bar">
+  <span class="ttl">☕ OOP Quiz</span>
+  <span id="timer-display">02:00:00</span>
+  <span id="ans-count">0 / 80 answered</span>
+</div>
+
+<div class="page">
+  <div class="exam-header">
+    <h1>Object-Oriented Programming — Quiz</h1>
+    <p>Classes & Objects · Inheritance · Polymorphism · Abstraction · Interfaces · Encapsulation · Static · Final</p>
+  </div>
+
+  <div class="student-info">
+    <div class="info-field"><label>Full Name</label><input id="f-name" type="text" placeholder="Enter your name..."></div>
+    <div class="info-field"><label>Student ID</label><input id="f-id" type="text" placeholder="ID number"></div>
+    <div class="info-field"><label>Date</label><input id="f-date" type="date"></div>
+  </div>
+
+  <div id="quiz-body"></div>
+  <button id="submit-btn" onclick="submitExam(false)">Submit Quiz ✓</button>
+
+  <div id="results">
+    <h2>📊 Your Results</h2>
+    <div class="score-grid">
+      <div class="sc g"><div class="val" id="r-c">0</div><div class="lbl">Correct</div></div>
+      <div class="sc r"><div class="val" id="r-w">0</div><div class="lbl">Wrong</div></div>
+      <div class="sc">  <div class="val" id="r-s">0</div><div class="lbl">Skipped</div></div>
+      <div class="sc">  <div class="val" id="r-p">0%</div><div class="lbl">Score</div></div>
+    </div>
+    <div id="r-msg" class="result-msg"></div>
+  </div>
+</div>
+
+<script>
+const SECS = 120 * 60;
+
+// ══════════════════════════════════════════════
+// ALL 80 QUESTIONS from the Google Form
+// ans: true = True, false = False
+// ══════════════════════════════════════════════
+const SECTIONS = [
+  {
+    title: "Classes & Objects",
+    color: "#1a4f8a",
+    questions: [
+      { id:"q1",  q:"A class is a blueprint used to create objects.", ans:true,
+        exp:"A class defines the structure and behavior; objects are the instances created from it.",
+        ar:"الكلاس هو القالب (Blueprint) الذي يُحدد شكل وسلوك الكائنات. الكائنات (Objects) هي النسخ التي تُنشأ منه." },
+      { id:"q2",  q:"An object is an instance of a class.", ans:true,
+        exp:"An object is a specific realization of a class in memory.",
+        ar:"الكائن هو نسخة حقيقية من الكلاس تُنشأ في الذاكرة عند تنفيذ البرنامج." },
+      { id:"q3",  q:"The <code>new</code> keyword is used to create an object in Java.", ans:true,
+        exp:"<code>new ClassName()</code> allocates memory and creates a new object.",
+        ar:"الكلمة المحجوزة new تُخصص مساحة في الذاكرة وتُنشئ كائناً جديداً من الكلاس." },
+      { id:"q4",  q:"Every object created from the same class must have identical values for its attributes.", ans:false,
+        exp:"Objects share the same structure but each has its own independent attribute values.",
+        ar:"الكائنات تشترك في نفس البنية (الكلاس) لكن كل كائن له قيمه الخاصة المستقلة. مثلاً كائنان من Student قد يكون لهما اسمان مختلفان." },
+      { id:"q51", q:"If no constructor is defined in a class, Java automatically provides a default constructor.", ans:true,
+        exp:"Java inserts a no-argument default constructor if none is defined.",
+        ar:"إذا لم تُعرّف أي مُنشئ، تُضيف Java تلقائياً مُنشئاً افتراضياً بدون معاملات." },
+      { id:"q52", q:"The call to <code>this()</code> must be the first statement in a constructor.", ans:true,
+        exp:"<code>this()</code> calls another constructor in the same class and must be the very first line.",
+        ar:"استدعاء this() يجب أن يكون أول سطر في المُنشئ، وإلا يحدث خطأ في الترجمة." },
+      { id:"q53", q:"Every class in Java directly or indirectly inherits from <code>Object</code>.", ans:true,
+        exp:"Object is the root of the Java class hierarchy.",
+        ar:"كل كلاس في Java يرث مباشرةً أو بشكل غير مباشر من الكلاس Object الذي هو رأس شجرة الوراثة." },
+      { id:"q54", q:"The <code>toString()</code> method is inherited from the <code>Object</code> class.", ans:true,
+        exp:"toString() is defined in Object and can be overridden in any class.",
+        ar:"الدالة toString() مُعرَّفة في الكلاس Object ويمكن تجاوزها (override) في أي كلاس آخر." },
+      { id:"q55", q:"Two objects created from the same class are always equal using <code>==</code>.", ans:false,
+        exp:"== compares references (memory addresses), not content. Use equals() for content comparison.",
+        ar:"العامل == يقارن عناوين الذاكرة (المراجع) وليس المحتوى. لمقارنة المحتوى استخدم الدالة equals()." },
+      { id:"q56", q:"A constructor can be declared <code>private</code>.", ans:true,
+        exp:"Private constructors prevent direct instantiation — used in Singleton pattern.",
+        ar:"يمكن أن يكون المُنشئ private لمنع إنشاء كائنات مباشرةً من الخارج — يُستخدم في نمط Singleton." },
+    ]
+  },
+  {
+    title: "Inheritance",
+    color: "#2c6fad",
+    questions: [
+      { id:"q5",  q:"Inheritance allows a class to acquire properties and methods from another class.", ans:true,
+        exp:"Inheritance enables code reuse — the subclass gets all accessible members of the superclass.",
+        ar:"الوراثة تسمح للكلاس الفرعي باكتساب خصائص ودوال الكلاس الأب، مما يُقلل تكرار الكود." },
+      { id:"q6",  q:"The <code>extends</code> keyword is used to implement inheritance.", ans:true,
+        exp:"<code>class Dog extends Animal</code> — Dog inherits from Animal.",
+        ar:"الكلمة extends تُستخدم لتطبيق الوراثة: class Dog extends Animal." },
+      { id:"q7",  q:"A subclass inherits all public and protected members of its superclass.", ans:true,
+        exp:"Private members are NOT inherited. Public and protected are inherited.",
+        ar:"الكلاس الفرعي يرث الأعضاء العامة (public) والمحمية (protected) فقط. الخاصة (private) لا تُورث." },
+      { id:"q8",  q:"A superclass is also called a parent class.", ans:true,
+        exp:"Superclass = parent class = base class. Subclass = child class = derived class.",
+        ar:"الكلاس الأب يُسمى أيضاً superclass أو base class. والكلاس الفرعي يُسمى subclass أو child class أو derived class." },
+      { id:"q24", q:"If a subclass does not explicitly call a superclass constructor, Java automatically attempts to call the superclass's no-argument constructor.", ans:true,
+        exp:"Java inserts super() automatically if you don't. Fails if superclass has no default constructor.",
+        ar:"إذا لم تكتب super() صراحةً، تُضيفها Java تلقائياً. ستفشل الترجمة إذا لم يكن للكلاس الأب مُنشئ افتراضي." },
+      { id:"q25", q:"A reference variable of a superclass type can refer to an object of its subclass.", ans:true,
+        exp:"This is upcasting — fundamental to polymorphism: Animal a = new Dog();",
+        ar:"هذا يُسمى Upcasting — المرجع من نوع الكلاس الأب يمكنه الإشارة لكائن من الكلاس الابن: Animal a = new Dog();" },
+      { id:"q31", q:"A class may extend one class and implement multiple interfaces simultaneously.", ans:true,
+        exp:"class MyClass extends ParentClass implements Interface1, Interface2 { }",
+        ar:"يمكن للكلاس أن يرث من كلاس واحد فقط لكنه يمكنه تنفيذ أكثر من interface في نفس الوقت." },
+      { id:"q32", q:"A constructor is inherited by subclasses in the same way as ordinary methods.", ans:false,
+        exp:"Constructors are NOT inherited. Subclasses can call them via super() but don't inherit them.",
+        ar:"المُنشئات لا تُورث. الكلاس الفرعي يمكنه استدعاء مُنشئ الكلاس الأب عبر super() لكنه لا يرثه." },
+      { id:"q57", q:"Java supports multiple inheritance of classes.", ans:false,
+        exp:"Java does NOT support multiple class inheritance. A class can extend only one class.",
+        ar:"Java لا تدعم الوراثة المتعددة للكلاسات. الكلاس يمكنه توسيع كلاس واحد فقط بالكلمة extends." },
+      { id:"q58", q:"Java supports multiple inheritance through interfaces.", ans:true,
+        exp:"A class can implement multiple interfaces — this is Java's way of multiple inheritance.",
+        ar:"Java تدعم الوراثة المتعددة عبر الـ interfaces. الكلاس يمكنه تنفيذ أكثر من interface." },
+      { id:"q59", q:"Inheritance represents an 'is-a' relationship.", ans:true,
+        exp:"A Dog IS-A Animal. A Car IS-A Vehicle. This is the is-a relationship of inheritance.",
+        ar:"الوراثة تُمثل علاقة 'is-a' — الكلب IS-A حيوان، السيارة IS-A مركبة." },
+      { id:"q60", q:"Composition represents a 'has-a' relationship.", ans:true,
+        exp:"A Car HAS-A Engine. A University HAS-A Student[]. This is composition.",
+        ar:"التركيب (Composition) تُمثل علاقة 'has-a' — السيارة HAS-A محرك، الجامعة HAS-A مصفوفة طلاب." },
+      { id:"q36", q:"A subclass object always contains all non-static instance variables defined in its superclass.", ans:true,
+        exp:"The subclass object includes the superclass fields (even private ones — though not directly accessible).",
+        ar:"كائن الكلاس الفرعي يحتوي دائماً على جميع متغيرات النسخة (instance variables) من الكلاس الأب، حتى الـ private منها (وإن لم يكن للوصول المباشر إليها)." },
+    ]
+  },
+  {
+    title: "Polymorphism",
+    color: "#1a6b4a",
+    questions: [
+      { id:"q9",  q:"Polymorphism allows one method to have different behaviors.", ans:true,
+        exp:"The same method name behaves differently depending on the actual object type at runtime.",
+        ar:"تعدد الأشكال يسمح لنفس اسم الدالة بأن تُنفَّذ بطريقة مختلفة بحسب نوع الكائن الفعلي في وقت التشغيل." },
+      { id:"q10", q:"Method overriding is an example of runtime polymorphism.", ans:true,
+        exp:"The method to call is decided at runtime based on the actual object type.",
+        ar:"تجاوز الدالة (Override) هو نوع من تعدد الأشكال في وقت التشغيل — يُحدد وقت التشغيل أي نسخة من الدالة تُستدعى." },
+      { id:"q11", q:"Method overloading is an example of compile-time polymorphism.", ans:true,
+        exp:"The compiler decides which overloaded method to call based on argument types.",
+        ar:"تحميل الدالة الزائد (Overloading) هو نوع من تعدد الأشكال في وقت الترجمة — المُترجم يُقرر أي نسخة تُستدعى." },
+      { id:"q12", q:"Overridden methods must have the same name and parameters.", ans:true,
+        exp:"Override requires same name, same parameter list, and same (or covariant) return type.",
+        ar:"الـ Override يتطلب نفس اسم الدالة ونفس قائمة المعاملات ونفس نوع القيمة المُرجَعة (أو نوع متوافق)." },
+      { id:"q26", q:"If a method is declared as <code>final</code>, it can still be overridden if the subclass is in the same package.", ans:false,
+        exp:"final methods cannot be overridden regardless of package.",
+        ar:"الدالة المُعلَنة final لا يمكن تجاوزها أبداً بغض النظر عن الحزمة (package)." },
+      { id:"q28", q:"When a subclass overrides a method, the return type must always be exactly the same as the superclass method.", ans:false,
+        exp:"Covariant return types are allowed — the subclass can return a more specific type.",
+        ar:"يُسمح بنوع إرجاع متوافق (Covariant return type) — الكلاس الفرعي يمكنه إرجاع نوع أكثر تخصصاً." },
+      { id:"q29", q:"A private method of a superclass can be directly overridden by a subclass.", ans:false,
+        exp:"Private methods are not inherited, so they cannot be overridden.",
+        ar:"الدوال private لا تُورث وبالتالي لا يمكن تجاوزها. ما يحدث هو تعريف دالة جديدة مستقلة في الكلاس الفرعي." },
+      { id:"q33", q:"An object can exhibit different behaviors through the same method call due to polymorphism.", ans:true,
+        exp:"Animal a = new Dog(); a.sound(); — calls Dog's sound(). Same call, different behavior.",
+        ar:"Animal a = new Dog(); — استدعاء a.sound() سيُشغّل دالة Dog وليس Animal. نفس الاستدعاء، سلوك مختلف." },
+      { id:"q43", q:"Dynamic binding occurs when the method to execute is determined at runtime based on the actual object type.", ans:true,
+        exp:"Dynamic binding = runtime polymorphism. The JVM decides which method to call at runtime.",
+        ar:"الربط الديناميكي يعني أن JVM يُقرر في وقت التشغيل أي نسخة من الدالة تُستدعى بناءً على نوع الكائن الفعلي." },
+      { id:"q44", q:"Method overloading requires methods to have the same parameter list but different return types.", ans:false,
+        exp:"Overloading requires DIFFERENT parameter lists (type, number, or order). Return type alone is not enough.",
+        ar:"الـ Overloading يتطلب قوائم معاملات مختلفة (نوع، عدد، أو ترتيب). اختلاف نوع القيمة المُرجَعة وحده لا يكفي." },
+      { id:"q49", q:"If <code>A obj = new B();</code> and class B overrides the instance method <code>show()</code>, then obj.show() executes the method in class A.", ans:false,
+        exp:"For instance methods, runtime type wins. obj is actually a B, so B's show() runs.",
+        ar:"للدوال العادية (instance methods)، يُحدد نوع الكائن الفعلي أي نسخة تُنفَّذ. obj هو كائن B فعلاً، إذاً show() من B تُشغَّل." },
+      { id:"q74", q:"Upcasting is assigning a subclass object to a superclass reference.", ans:true,
+        exp:"Animal a = new Dog(); — this is upcasting. It's safe and implicit.",
+        ar:"Upcasting هو تعيين كائن من الكلاس الفرعي لمرجع من الكلاس الأب: Animal a = new Dog(); — آمن ولا يحتاج cast صريح." },
+      { id:"q75", q:"Downcasting may require an explicit cast.", ans:true,
+        exp:"Dog d = (Dog) a; — you must cast explicitly, and it can throw ClassCastException if wrong.",
+        ar:"Downcasting يتطلب cast صريح: Dog d = (Dog) a; — وقد يُسبب ClassCastException إذا كان نوع الكائن غير مطابق." },
+      { id:"q76", q:"The <code>instanceof</code> operator is used to test whether an object belongs to a particular type.", ans:true,
+        exp:"if (a instanceof Dog) — checks if the object is a Dog before downcasting.",
+        ar:"العامل instanceof يُستخدم للتحقق من نوع الكائن قبل القيام بـ Downcasting لتجنب ClassCastException." },
+      { id:"q80", q:"Methods <code>sum(int a, int b)</code> and <code>sum(double a, double b)</code> are overloaded methods.", ans:true,
+        exp:"Same name, different parameter types → valid method overloading.",
+        ar:"نفس اسم الدالة sum لكن مع معاملات بأنواع مختلفة (int مقابل double) — هذا هو Overloading صحيح." },
+      { id:"q81", q:"A constructor can be overloaded.", ans:true,
+        exp:"You can have multiple constructors with different parameter lists in the same class.",
+        ar:"يمكن تعريف أكثر من مُنشئ بمعاملات مختلفة في نفس الكلاس — هذا Overloading للمُنشئ." },
+      { id:"q82", q:"A constructor can be overridden.", ans:false,
+        exp:"Constructors are not inherited and cannot be overridden. Each class defines its own constructors.",
+        ar:"المُنشئات لا تُورث وبالتالي لا يمكن تجاوزها (override). كل كلاس يُعرّف مُنشئاته الخاصة." },
+      { id:"q83", q:"Method overloading requires methods to have different method signatures.", ans:true,
+        exp:"Method signature = name + parameter list. Different signatures → valid overloading.",
+        ar:"توقيع الدالة = الاسم + قائمة المعاملات. الـ Overloading يتطلب توقيعات مختلفة." },
+    ]
+  },
+  {
+    title: "Abstraction",
+    color: "#5a3a8a",
+    questions: [
+      { id:"q13", q:"Abstraction hides implementation details from the user.", ans:true,
+        exp:"Abstraction exposes only what is necessary, hiding internal complexity.",
+        ar:"التجريد يُظهر فقط ما هو ضروري للمستخدم ويُخفي تفاصيل التنفيذ الداخلية." },
+      { id:"q14", q:"An abstract class may contain both abstract and concrete methods.", ans:true,
+        exp:"Unlike interfaces, abstract classes can have implemented methods alongside abstract ones.",
+        ar:"الكلاس المجرد يمكنه احتواء دوال مجردة (بدون تنفيذ) ودوال عادية (بتنفيذ) في نفس الوقت." },
+      { id:"q15", q:"A class containing an abstract method must be declared <code>abstract</code>.", ans:true,
+        exp:"If a class has even one abstract method, the whole class must be declared abstract.",
+        ar:"إذا احتوى الكلاس على دالة مجردة واحدة على الأقل، يجب تعريف الكلاس كله بالكلمة abstract." },
+      { id:"q16", q:"Abstraction focuses on 'what an object does' rather than 'how it does it.'", ans:true,
+        exp:"The user knows what the method does but not how it's implemented internally.",
+        ar:"التجريد يُركز على 'ماذا يفعل الكائن' وليس 'كيف يفعله'. المستخدم يعرف الوظيفة دون التفاصيل الداخلية." },
+      { id:"q77", q:"An abstract class can be declared without any abstract methods.", ans:true,
+        exp:"Legal in Java — a class can be abstract but contain only concrete methods.",
+        ar:"مسموح في Java — يمكن تعريف كلاس abstract دون أن يحتوي على أي دالة مجردة." },
+      { id:"q86", q:"An abstract class can be declared as <code>final</code>.", ans:false,
+        exp:"abstract and final contradict — abstract requires subclassing, final prevents it.",
+        ar:"التعريفان abstract و final متناقضان: abstract يتطلب وراثة، final يمنعها. لا يمكن الجمع بينهما." },
+      { id:"q87", q:"An abstract method can be declared as <code>final</code>.", ans:false,
+        exp:"An abstract method must be overridden; final prevents overriding — contradiction.",
+        ar:"الدالة المجردة يجب تجاوزها في الكلاس الفرعي، لكن final يمنع التجاوز — تناقض كامل." },
+      { id:"q88", q:"A <code>final</code> class can contain methods and constructors.", ans:true,
+        exp:"final just prevents subclassing. The class itself is fully functional.",
+        ar:"final تمنع فقط وراثة الكلاس. الكلاس نفسه يبقى كاملاً مع دوال ومُنشئات يمكن استخدامها." },
+      { id:"q66", q:"An abstract class can contain instance variables.", ans:true,
+        exp:"Abstract classes are like regular classes except they can have abstract methods.",
+        ar:"الكلاس المجرد يمكنه احتواء متغيرات نسخة (instance variables) تماماً مثل الكلاسات العادية." },
+      { id:"q67", q:"A class can both extend an abstract class and implement an interface.", ans:true,
+        exp:"class MyClass extends AbstractClass implements MyInterface { } — perfectly valid.",
+        ar:"يمكن للكلاس أن يرث من كلاس مجرد وينفّذ interface في نفس الوقت: class C extends A implements I {}" },
+    ]
+  },
+  {
+    title: "Interfaces",
+    color: "#8a3a1a",
+    questions: [
+      { id:"q17", q:"An interface can contain abstract methods.", ans:true,
+        exp:"By default, all methods in an interface (without body) are abstract and public.",
+        ar:"الـ interface يمكنه احتواء دوال مجردة. كل دالة بدون جسم في interface هي تلقائياً abstract و public." },
+      { id:"q18", q:"A class uses the <code>implements</code> keyword to implement an interface.", ans:true,
+        exp:"class Dog implements Animal { } — Dog must provide all interface method implementations.",
+        ar:"الكلاس يستخدم implements لتنفيذ interface: class Dog implements Animal {} — ويجب تنفيذ كل الدوال." },
+      { id:"q19", q:"A Java class can implement multiple interfaces.", ans:true,
+        exp:"class MyClass implements A, B, C { } — Java's solution to multiple inheritance.",
+        ar:"الكلاس يمكنه تنفيذ أكثر من interface: class C implements A, B {} — هذا هو حل Java للوراثة المتعددة." },
+      { id:"q20", q:"Interfaces help achieve abstraction.", ans:true,
+        exp:"Interfaces define what must be done without specifying how.",
+        ar:"الـ interfaces تُحقق التجريد بتعريف ما يجب فعله دون تحديد كيفية التنفيذ." },
+      { id:"q21", q:"A class is required to implement all methods of an interface unless the class is abstract.", ans:true,
+        exp:"Either implement all interface methods or declare the class as abstract.",
+        ar:"يجب تنفيذ جميع دوال الـ interface وإلا يجب تعريف الكلاس كـ abstract." },
+      { id:"q27", q:"An interface can be used as a data type for reference variables.", ans:true,
+        exp:"Flyable f = new Bird(); — interface as reference type is a key OOP technique.",
+        ar:"يمكن استخدام الـ interface كنوع بيانات للمراجع: Flyable f = new Bird(); — أسلوب أساسي في OOP." },
+      { id:"q37", q:"An interface cannot extend another interface.", ans:false,
+        exp:"An interface CAN extend another interface using 'extends': interface B extends A { }",
+        ar:"الـ interface يمكنه توسيع interface آخر باستخدام extends: interface B extends A {} — هذا مسموح." },
+      { id:"q64", q:"An interface variable is implicitly <code>public static final</code>.", ans:true,
+        exp:"All fields in an interface are constants — public, static, and final by default.",
+        ar:"جميع المتغيرات في interface هي تلقائياً public static final، أي ثوابت مشتركة لا يمكن تغييرها." },
+    ]
+  },
+  {
+    title: "Encapsulation",
+    color: "#3a6b1a",
+    questions: [
+      { id:"q22", q:"Private variables can be accessed directly from outside the class.", ans:false,
+        exp:"Private members are only accessible within the class they are declared.",
+        ar:"المتغيرات private لا يمكن الوصول إليها مباشرةً من خارج الكلاس — هذا هو جوهر التغليف (Encapsulation)." },
+      { id:"q23", q:"Getter and setter methods are commonly used in encapsulation.", ans:true,
+        exp:"Getters read private data; setters modify it — providing controlled access.",
+        ar:"دوال الـ getter تقرأ البيانات الخاصة وdoال setter تُعدّلها — توفر وصولاً مُتحكَّماً للبيانات." },
+      { id:"q24b",q:"Encapsulation improves data security.", ans:true,
+        exp:"By hiding data and controlling access, encapsulation protects the integrity of object state.",
+        ar:"التغليف يُحسن أمان البيانات بإخفائها والتحكم في الوصول إليها، مما يحمي حالة الكائن من التعديل غير المقصود." },
+      { id:"q34", q:"Declaring all attributes of a class as <code>public</code> is considered a good encapsulation practice.", ans:false,
+        exp:"Good encapsulation requires private attributes with controlled access via getters/setters.",
+        ar:"الممارسة الجيدة للتغليف تتطلب جعل المتغيرات private وتوفير getter/setter للتحكم في الوصول إليها." },
+      { id:"q61", q:"Protected members can be accessed by subclasses.", ans:true,
+        exp:"protected access: same class, same package, and subclasses (even in different packages).",
+        ar:"المتغيرات protected يمكن الوصول إليها من نفس الكلاس، نفس الحزمة، وجميع الكلاسات الفرعية." },
+    ]
+  },
+  {
+    title: "Static & Final",
+    color: "#6b6b1a",
+    questions: [
+      { id:"q38", q:"A <code>static</code> variable belongs to the class rather than to individual objects.", ans:true,
+        exp:"Static variables are shared among all instances of the class.",
+        ar:"المتغير static مشترك بين جميع كائنات الكلاس — هو ملك للكلاس وليس لأي كائن بعينه." },
+      { id:"q39", q:"Each object created from a class gets its own separate copy of a static variable.", ans:false,
+        exp:"Static variables have ONE copy shared by all objects. Changing it via one object affects all.",
+        ar:"المتغير static له نسخة واحدة فقط مشتركة بين جميع الكائنات. تغييره عبر أي كائن يؤثر على الجميع." },
+      { id:"q40", q:"A <code>static</code> method can directly access non-static instance variables without an object reference.", ans:false,
+        exp:"Static methods don't have 'this' — they can't access instance variables directly.",
+        ar:"الدوال static لا تمتلك مرجع this ولا يمكنها الوصول للمتغيرات العادية (instance variables) مباشرةً." },
+      { id:"q41", q:"A <code>final</code> method cannot be overridden by a subclass.", ans:true,
+        exp:"final methods are locked — no subclass can override them.",
+        ar:"الدالة final مُقفَلة ولا يمكن لأي كلاس فرعي تجاوزها (override)." },
+      { id:"q42", q:"A <code>final</code> class can be inherited by other classes.", ans:false,
+        exp:"A final class cannot be subclassed at all.",
+        ar:"الكلاس final لا يمكن وراثته أبداً. لا يمكن لأي كلاس آخر استخدام extends معه." },
+      { id:"q45", q:"Changing the value of a <code>static</code> variable through one object affects all objects of that class.", ans:true,
+        exp:"One shared copy — any change is visible to all instances.",
+        ar:"نسخة واحدة مشتركة — أي تغيير عبر أي كائن يظهر لجميع الكائنات الأخرى." },
+      { id:"q46", q:"A constructor can be overridden in a subclass.", ans:false,
+        exp:"Constructors are not inherited and cannot be overridden.",
+        ar:"المُنشئات لا تُورث ولا يمكن تجاوزها. كل كلاس يمتلك مُنشئاته الخاصة المستقلة." },
+      { id:"q47", q:"A <code>static</code> block is executed only once when the class is loaded into memory.", ans:true,
+        exp:"The static initializer block runs once when the JVM loads the class.",
+        ar:"الكتلة static {} تُنفَّذ مرة واحدة فقط عندما يُحمَّل الكلاس في الذاكرة من قِبَل JVM." },
+      { id:"q48", q:"If <code>A obj = new B();</code> and both classes define a <code>static</code> method <code>show()</code>, then <code>obj.show()</code> executes the method in class A.", ans:true,
+        exp:"Static methods use reference type (compile-time), not the actual object type. obj is declared as A.",
+        ar:"الدوال static تتبع نوع المرجع (وقت الترجمة) وليس نوع الكائن الفعلي. obj مُعلَّن كـ A، إذاً show() من A تُشغَّل." },
+      { id:"q68", q:"<code>static</code> methods cannot use the <code>this</code> keyword.", ans:true,
+        exp:"this refers to the current object instance — static methods don't belong to any instance.",
+        ar:"this تشير للكائن الحالي، لكن الدوال static لا تنتمي لأي كائن — لذا لا يمكن استخدام this بداخلها." },
+    ]
+  },
+  {
+    title: "Memory & Misc",
+    color: "#4a4a4a",
+    questions: [
+      { id:"q62", q:"Method overloading can be achieved by changing the number or type of parameters.", ans:true,
+        exp:"Different number, types, or order of parameters all create valid overloaded methods.",
+        ar:"الـ Overloading يمكن تحقيقه بتغيير عدد المعاملات أو أنواعها أو ترتيبها." },
+      { id:"q63", q:"An abstract class can be declared as final.", ans:false,
+        exp:"abstract requires subclassing; final prevents it — these keywords contradict.",
+        ar:"abstract يتطلب وراثة وfinal يمنعها — الجمع بينهما يُسبب خطأ في الترجمة." },
+      { id:"q69", q:"Upcasting is assigning a subclass object to a superclass reference.", ans:true,
+        exp:"Animal a = new Dog(); — safe and implicit.",
+        ar:"Upcasting: Animal a = new Dog(); — آمن ولا يحتاج cast صريح." },
+      { id:"q71", q:"A reference variable declared inside a method is stored in the stack.", ans:true,
+        exp:"Local variables and references are on the stack; objects themselves are on the heap.",
+        ar:"المتغيرات المحلية والمراجع تُخزَّن في الـ Stack، أما الكائنات الفعلية فتُخزَّن في الـ Heap." },
+      { id:"q72", q:"Garbage Collection is responsible for freeing memory occupied by unreachable objects.", ans:true,
+        exp:"Java's GC automatically reclaims memory from objects with no live references.",
+        ar:"Garbage Collector في Java يُحرّر تلقائياً الذاكرة المُشغَّلة بكائنات لا يشير إليها أي مرجع نشط." },
+      { id:"q73", q:"Multiple reference variables can point to the same object in heap memory.", ans:true,
+        exp:"Dog a = new Dog(); Dog b = a; — both a and b point to the same object.",
+        ar:"Dog a = new Dog(); Dog b = a; — كلا المرجعَين a وb يُشيران لنفس الكائن في الـ Heap." },
+      { id:"q84", q:"Objects created using the <code>new</code> keyword are stored in heap memory.", ans:true,
+        exp:"All objects in Java live in the heap. References to them live in the stack.",
+        ar:"جميع الكائنات المُنشأة بـ new تُخزَّن في الـ Heap. المراجع التي تُشير إليها تُخزَّن في الـ Stack." },
+      { id:"q85", q:"An abstract class can be declared as <code>final</code>.", ans:false,
+        exp:"Contradiction: abstract needs to be extended, final prevents extension.",
+        ar:"تناقض: abstract يحتاج وراثة، وfinal يمنع الوراثة. لا يمكن الجمع بينهما." },
+    ]
+  },
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+const answers = {};
+const attempts = {};
+const correct_final = {};
+let submitted = false;
+let timeLeft = SECS;
+let timerInt;
+let totalQ = 0;
+
+SECTIONS.forEach(s => totalQ += s.questions.length);
+
+// ══════════════════════════════════════════════
+// TIMER
+// ══════════════════════════════════════════════
+function fmt(s){ const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60; return (h>0?String(h).padStart(2,'0')+':':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
+function startTimer(){
+  const d=document.getElementById('timer-display');
+  d.textContent=fmt(timeLeft);
+  timerInt=setInterval(()=>{
+    timeLeft--;
+    d.textContent=fmt(timeLeft);
+    if(timeLeft<=300&&timeLeft>60) d.className='warn';
+    if(timeLeft<=60) d.className='danger';
+    if(timeLeft<=0){ clearInterval(timerInt); submitExam(true); }
+  },1000);
+}
+
+// ══════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════
+function buildCard(q, globalNum){
+  const card = document.createElement('div');
+  card.className = 'q-card'; card.id = 'card-'+q.id;
+
+  const qrow = document.createElement('div'); qrow.className='q-row';
+  qrow.innerHTML = `<span class="q-num">${globalNum}.</span><span class="q-text">${q.q}</span>`;
+  card.appendChild(qrow);
+
+  const btns = document.createElement('div'); btns.className='tf-btns';
+  ['True','False'].forEach(lbl => {
+    const b = document.createElement('button');
+    b.className='tf-btn'; b.textContent=lbl; b.dataset.val=lbl;
+    b.onclick = () => pick(q, lbl==='True', b, card, btns);
+    btns.appendChild(b);
+  });
+  card.appendChild(btns);
+
+  const fb = document.createElement('div'); fb.className='feedback'; fb.id='fb-'+q.id;
+  card.appendChild(fb);
+  return card;
+}
+
+async function pick(q, val, btn, card, btns){
+  if(submitted) return;
+  const attempt = (attempts[q.id]||0)+1;
+  attempts[q.id] = attempt;
+  const isCorrect = (val === q.ans);
+  correct_final[q.id] = isCorrect;
+  answers[q.id] = val;
+  updateCount();
+
+  // reset buttons
+  Array.from(btns.children).forEach(b=>{ b.classList.remove('sel','wrong','correct','reveal'); });
+  btn.classList.add('sel');
+
+  const fb = document.getElementById('fb-'+q.id);
+  const maxRetry = 2;
+  const canRetry = attempt < maxRetry;
+
+  if(isCorrect){
+    Array.from(btns.children).forEach(b=>b.classList.add('locked'));
+    btn.classList.remove('sel'); btn.classList.add('correct');
+    fb.className='feedback show c';
+    fb.innerHTML=`<strong>✓ Correct!</strong> ${q.exp}<div class="ar">✓ صحيح! ${q.ar}</div>`;
+  } else {
+    btn.classList.remove('sel'); btn.classList.add('wrong');
+    fb.className='feedback show w';
+    fb.innerHTML=`<strong>✗ Wrong</strong> — attempt ${attempt}/${maxRetry}
+      <div class="ar">✗ إجابة خاطئة (محاولة ${attempt}/${maxRetry}).<br>${q.ar}${canRetry?'<br><strong>حاول مرة ثانية ↑</strong>':''}</div>
+      ${canRetry?`<button class="retry-btn" onclick="retry('${q.id}')">🔁 Try Again</button>`:''}`;
+    if(!canRetry){
+      Array.from(btns.children).forEach(b=>{
+        b.classList.add('locked');
+        if((b.dataset.val==='True')===q.ans) b.classList.add('reveal');
+      });
+    }
+  }
+}
+
+function retry(id){
+  const allQ = SECTIONS.flatMap(s=>s.questions);
+  const q = allQ.find(x=>x.id===id);
+  const card = document.getElementById('card-'+id);
+  const btns = card.querySelector('.tf-btns');
+  const fb   = document.getElementById('fb-'+id);
+  Array.from(btns.children).forEach(b=>{
+    b.classList.remove('sel','wrong','correct','reveal','locked');
+    b.onclick = ()=>pick(q,b.dataset.val==='True',b,card,btns);
+  });
+  fb.className='feedback'; fb.innerHTML='';
+  delete answers[id];
+  updateCount();
+}
+
+function updateCount(){
+  const n=Object.keys(answers).length;
+  document.getElementById('ans-count').textContent=`${n} / ${totalQ} answered`;
+}
+
+function renderQuiz(){
+  const body=document.getElementById('quiz-body');
+  let globalNum=1;
+  SECTIONS.forEach(sec=>{
+    const hdr=document.createElement('div');
+    hdr.innerHTML=`<div class="sec-hdr" style="background:${sec.color}">
+      <h2>${sec.title}</h2>
+      <span class="sec-marks">${sec.questions.length} questions</span>
+    </div>
+    <div class="sec-instr">📌 True or False — one retry allowed. Wrong answer shows Arabic explanation.</div>`;
+    body.appendChild(hdr);
+    sec.questions.forEach(q=>{ body.appendChild(buildCard(q,globalNum++)); });
+  });
+}
+
+// ══════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════
+function submitExam(auto){
+  if(submitted) return;
+  const allQ = SECTIONS.flatMap(s=>s.questions);
+  const unanswered = allQ.filter(q=>answers[q.id]===undefined);
+  if(!auto&&unanswered.length>0){
+    const go=confirm(`${unanswered.length} question(s) unanswered. Submit anyway?`);
+    if(!go){
+      unanswered.forEach(q=>{
+        const c=document.getElementById('card-'+q.id);
+        if(c) c.classList.add('unanswered-highlight');
+      });
+      return;
+    }
+  }
+  submitted=true;
+  clearInterval(timerInt);
+  document.getElementById('submit-btn').disabled=true;
+  document.getElementById('submit-btn').textContent=auto?"⏰ Time's up — Submitted":"✓ Submitted";
+  document.querySelectorAll('.tf-btn:not(.locked)').forEach(b=>{b.classList.add('locked');b.onclick=null;});
+
+  let c=0,w=0,s=0;
+  allQ.forEach(q=>{
+    if(answers[q.id]===undefined) s++;
+    else if(correct_final[q.id]===true) c++;
+    else w++;
+  });
+  const pct=Math.round(c/totalQ*100);
+  document.getElementById('r-c').textContent=c;
+  document.getElementById('r-w').textContent=w;
+  document.getElementById('r-s').textContent=s;
+  document.getElementById('r-p').textContent=pct+'%';
+
+  const msg=document.getElementById('r-msg');
+  if(pct>=70){
+    msg.className='result-msg pass';
+    msg.textContent=pct>=90?`🏆 Excellent! ${c}/${totalQ} (${pct}%)`
+                   :pct>=80?`🎉 Great job! ${c}/${totalQ} (${pct}%)`
+                   :         `✅ Good! ${c}/${totalQ} (${pct}%)`;
+  } else {
+    msg.className='result-msg fail';
+    msg.textContent=`📚 You scored ${c}/${totalQ} (${pct}%). Review the Arabic explanations above for the wrong answers.`;
+  }
+  document.getElementById('results').style.display='block';
+  document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+renderQuiz();
+startTimer();
+document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
